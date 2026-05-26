@@ -1,5 +1,5 @@
 import numpy as np
-# from pypixxlib import _libdpx as dp
+from pypixxlib import _libdpx as dp
 
 # Creating new stimulus positions to display using PROPIXX QUAD4x mode
 def reformat_for_propixx(win, position):
@@ -20,19 +20,19 @@ def reformat_for_propixx(win, position):
         return new_positions
 
 # Send triggers using DATApixx    
-# def send_trigger(trig_value, update=False):
+def send_trigger(trig_value, update=False):
 
-#     # set all pins to 'on'
-#     bit_mask = 0xFFFFFF    
+    # set all pins to 'on'
+    bit_mask = 0xFFFFFF    
 
-#     # set trigger value
-#     dp.DPxSetDoutValue(trig_value, bit_mask)
+    # set trigger value
+    dp.DPxSetDoutValue(trig_value, bit_mask)
 
-#     # write or update register cache
-#     if not update:
-#         dp.DPxWriteRegCache() 
-#     else:
-#         dp.DPxUpdateRegCache()
+    # write or update register cache
+    if not update:
+        dp.DPxWriteRegCache() 
+    else:
+        dp.DPxUpdateRegCache()
 
 # Find desired size of stimuli in pixels
 def dva_to_pix(dva, distance, screen_res, screen_width):
