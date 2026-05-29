@@ -693,10 +693,11 @@ for state in trial_structure:
             [np.repeat(stim_tag_combos_tar_left, repeats=int(n_trials_high/4), axis=0), # repeats = number of trials needed, divided by the number of trial types with the target on the HPL side
              np.repeat(stim_tag_combos_tar_right, repeats=int(n_trials_low/4), axis=0)]
             )
-    np.random.shuffle(state_trial_seq)
+    #np.random.shuffle(state_trial_seq)
     # find target side on each trial
     target_seq = np.concatenate([np.ones(int(n_trials_high)), np.zeros(int(n_trials_low))])
-    np.random.shuffle(target_seq)
+    #np.random.shuffle(target_seq)
+    state_target_side = []
     for trial in target_seq:
         if hpl == 'right':
             if trial == 1:
@@ -708,12 +709,16 @@ for state in trial_structure:
                 target_side = ['left']
             else:
                 target_side = ['right']
-        exp_target_side.extend(target_side)
-
+        state_target_side.extend(target_side)
+        #exp_target_side.extend(target_side)
+    trial_plus_target = np.concatenate([np.array(state_trial_seq), 
+                                        np.expand_dims(np.array(state_target_side), 1)], axis=1)
+    np.random.shuffle(trial_plus_target)
     # add to whole experiment array
+    exp_target_side.extend(list(trial_plus_target[:, 2]))
     exp_target_ratio.extend([ratio]*N_TRIALS_PER_STATE)
     exp_hpl.extend([hpl]*N_TRIALS_PER_STATE)
-    exp_trial_seq.extend(state_trial_seq)
+    exp_trial_seq.extend(trial_plus_target[:, 0:2])
 
 # create random phase offsets
 phase_offsets = np.repeat(np.arange(1, 9), repeats=(N_TRIALS*N_BLOCKS)/8) # offset phase by 1-8 samples from the cycle
