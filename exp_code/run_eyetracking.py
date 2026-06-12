@@ -1,9 +1,14 @@
 import tobii_research as tr
+from eye_tracking_functions import *
 from tobii_research_addons import ScreenBasedCalibrationValidation, Point2
 import pandas as pd
 import os
 import time
 import sys
+from psychopy import gui, visual, event
+
+# check time in Unix epoch time
+time.time()
 
 ## ========================================================
 ## Set paths
@@ -34,7 +39,7 @@ display_area = my_et.get_display_area()
 #z = points toward user perpendicular to the front surfice of the eye tracker
 #y = points vertically towards the user's up
 #x = points hoizontally towards the user's right
-topLeft = (-302, 433, -95) # measured manually
+topLeft = (-302, 433, -95)
 bottomLeft = (-302, 79, -95)
 topRight = (302, 433, -95)
 new_display_area_dict = dict()
@@ -45,118 +50,28 @@ new_display_area = tr.DisplayArea(new_display_area_dict)
 my_et.set_display_area(new_display_area)
 
 ## ========================================================
-## Calibrate
+## Initial calibration
 ## ========================================================
-ENTER_CALIBRATION = int(input('\n\n PRESS 1 TO ENTER CALIBRATION. \n PRESS 2 TO SKIP. \n PRESS 0 TO EXIT. \n\n'))
-
-if ENTER_CALIBRATION == 1:
-
-    calibration_status = [False, False, False, False, False]
-    points_to_calibrate = [(0.2, 0.2), # upper left
-                           (0.8, 0.2), #upper right
-                           (0.5, 0.5), # middle
-                           (0.2, 0.8), # lower left
-                           (0.8, 0.8)] # lower right
-    point_names = ['Top Left', 'Top Right', 'Middle', 'Bottom Left', 'Bottom Right']
-        
-    calibration = tr.ScreenBasedCalibration(my_et)
-    calibration.enter_calibration_mode()
-
-    while True:
-
-        # cycle through points to calibrate on
-        for i, point in enumerate(points_to_calibrate):
-
-            print(f'Calibrating position {point_names[i]}')
-            while True:
-                STATUS = calibration.collect_data(point[0], point[1])
-                if STATUS == 'calibration_status_success':
-                    calibration_status[i] = True
-                NEXT_POINT = int(input(f'\nCALIBRATION POINT STATUS: {STATUS} \n\n PRESS 1 TO CONTINUE. PRESS 0 TO REPEAT. \n\n'))
-                if NEXT_POINT:
-                    break
-                else:
-                    calibration.discard_data(point[0], point[1])
-
-        # ask if user wants to accept the results of calibration or repeat process again
-        ACCEPT_CALIBRATION = int(input(f'\n\nCALIBRATION STATUS: {calibration_status}. \n\nPRESS 1 TO CONTINUE. PRESS 0 TO REPEAT.\n\n'))
-        if ACCEPT_CALIBRATION:
-            calibration_result = calibration.compute_and_apply()
-
-            # plot calibration results?
-            calibrated_results = calibration_result.calibration_points
-
-            # leave calibration mode
-            calibration.leave_calibration_mode()
-            break
-
-elif ENTER_CALIBRATION == 2:
-    pass
-
-else:
-    sys.exit()
-
+accepted_inputs = ['0', '1', '2']
+while True:
+    ENTER_CALIBRATION = input('\n\n PRESS 1 TO ENTER CALIBRATION. \n PRESS 2 TO SKIP. \n PRESS 0 TO EXIT. \n\n')
+    if ENTER_CALIBRATION in accepted_inputs:
+        ENTER_CALIBRATION = int(ENTER_CALIBRATION)
+        break
+    else: 
+        print('Input not valid! Try again')
+enter_calibration(ENTER_CALIBRATION, my_et)
 ## ========================================================
-## Validate
+## Initial validation
 ## ========================================================
-ENTER_VALIDATION = int(input('\n\n PRESS 1 TO ENTER VALIDATION. \n PRESS 2 TO SKIP \n PRESS 0 TO EXIT. \n\n'))
-
-if ENTER_VALIDATION == 1:
-
-    #validation_status = [False, False, False, False, False]
-    points_to_validate = [Point2(0.2, 0.2), # upper left
-                          Point2(0.8, 0.2), #upper right
-                          Point2(0.5, 0.5), # middle
-                          Point2(0.2, 0.8), # lower left
-                          Point2(0.8, 0.8)] # lower right
-    point_names = ['Top Left', 'Top Right', 'Middle', 'Bottom Left', 'Bottom Right']
-    sample_count = 30
-    timeout_ms = 1000
-    validation = ScreenBasedCalibrationValidation(my_et, sample_count, timeout_ms)
-    validation.enter_validation_mode()
-
-    while True:
-
-        # cycle through points to calibrate on
-        for i, point in enumerate(points_to_validate):
-
-            print(f'Validating position {point_names[i]}')
-            while True:
-                
-                validation.start_collecting_data(point)
-                while validation.is_collecting_data:
-                    time.sleep(1)                
-                NEXT_POINT = int(input(f'\nPRESS 1 TO CONTINUE. PRESS 0 TO REPEAT. \n\n'))
-                if NEXT_POINT:
-                    break
-                else:
-                    validation.discard_data(point)
-
-        # compute validation result
-        validation_result = validation.compute()
-        # print output
-        print(f'''
-              VALIDATION POINTS: {validation_result.points}
-              ACCURACY LEFT EYE: {validation_result.average_accuracy_left}
-              ACCURACY RIGHT EYE: {validation_result.average_accuracy_right}
-              PRECISION LEFT EYE: {validation_result.average_precision_left}
-              PRECISION RIGHT EYE: {validation_result.average_precision_right}
-              ''')
-
-        # ask if user wants to accept the results of validation or repeat process again
-        ACCEPT_VALIDATION = int(input(f'\n\nPRESS 1 TO CONTINUE. PRESS 0 TO REPEAT.\n\n'))
-        if ACCEPT_VALIDATION:
-
-            # leave calibration mode
-            validation.leave_validation_mode()
-            break
-        
-elif ENTER_VALIDATION == 2:
-    pass
-
-else:
-    sys.exit()
-
+while True:
+    ENTER_VALIDATION = input('\n\n PRESS 1 TO ENTER VALIDATION. \n PRESS 2 TO SKIP. \n PRESS 0 TO EXIT. \n\n')
+    if ENTER_VALIDATION in accepted_inputs:
+        ENTER_VALIDATION = int(ENTER_VALIDATION)
+        break
+    else: 
+        print('Input not valid! Try again')
+enter_validation(ENTER_VALIDATION, my_et)
 ## ========================================================
 ## Get gaze data
 ## ========================================================
@@ -173,7 +88,7 @@ def gaze_data_callback(gaze_data):
     global gaze_data_buffer
     global trig
     global block 
-    global winsize # adjust for differnet coordinates - check this!! Should this be 960 x 520 to account for PROPixx QUAD4X?
+    global winsize # adjust for differnet coordinates - check this!!
 
     # Extract the data we are interested in
     t  = gaze_data.system_time_stamp / 1000
@@ -207,7 +122,7 @@ def external_signal_callback(external_signal_data):
     print(trig)
 
 # function to save data file
-def write_buffer_to_file(gaze_data_buffer, output_path): 
+def write_buffer_to_file(gaze_data_buffer, output_path): # external_signal_buffer
 
     # Make a copy of the buffer and clear it
     gaze_data_buffer_copy = gaze_data_buffer[:]
@@ -219,7 +134,7 @@ def write_buffer_to_file(gaze_data_buffer, output_path):
 
     # Convert buffer to DataFrame
     gaze_data_out = pd.DataFrame(gaze_data_buffer_copy, columns=gaze_data_columns)
-    
+
     # Check if the file exists
     file_exists = os.path.isfile(output_path)
     
@@ -233,16 +148,82 @@ my_et.subscribe_to(tr.EYETRACKER_EXTERNAL_SIGNAL, external_signal_callback)
 # get input to save data
 while True:
 
-    # save data automatically
+    # save data automatically at end of block
     if trig == 254:
         FILENAME = f'{SUBID}_task-{EXPERIMENT}_eye_block-{block}.csv'
         FILEPATH = DATAPATH + SUBID + '/eye/' + FILENAME
-        time.sleep(1) # add a bit of extra time at the end so epochs in analysis aren't dropped due to being too short
+        time.sleep(1)
         write_buffer_to_file(gaze_data_buffer, FILEPATH) # external signal buffer
         print('Saving data')
         block += 1 
+    # exit recording
     if trig == 255:
-        write_buffer_to_file(gaze_data_buffer, FILEPATH)
+        print('Exiting')
+        break
+
+# unsubscribe from callbacks
+my_et.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
+my_et.unsubscribe_from(tr.EYETRACKER_EXTERNAL_SIGNAL, external_signal_callback)
+
+# display reminder to redo calibration 
+# dlg = gui.Dlg(title="")
+# dlg.addText("Redo calibration and validation")
+# dlg.show()
+
+win = visual.Window(fullscr=1)
+txt = visual.TextStim(win = win, 
+                      text= "Redo calibration and validation. \n\n Press SPACE to continue")
+while True:
+
+    txt.draw()
+    win.flip()
+    pressed = event.getKeys(keyList='space')
+    if pressed:
+        break
+win.close()
+## ========================================================
+## Second calibration
+## ========================================================
+while True:
+    ENTER_CALIBRATION = input('\n\n PRESS 1 TO ENTER CALIBRATION. \n PRESS 2 TO SKIP. \n PRESS 0 TO EXIT. \n\n')
+    if ENTER_CALIBRATION in accepted_inputs:
+        ENTER_CALIBRATION = int(ENTER_CALIBRATION)
+        break
+    else: 
+        print('Input not valid! Try again')
+enter_calibration(ENTER_CALIBRATION, my_et)
+
+## ========================================================
+## Second validation
+## ========================================================
+while True:
+    ENTER_VALIDATION = input('\n\n PRESS 1 TO ENTER VALIDATION. \n PRESS 2 TO SKIP. \n PRESS 0 TO EXIT. \n\n')
+    if ENTER_VALIDATION in accepted_inputs:
+        ENTER_VALIDATION = int(ENTER_VALIDATION)
+        break
+    else: 
+        print('Input not valid! Try again')
+enter_validation(ENTER_VALIDATION, my_et)
+
+# restart recording 
+print('STARTING RECORDING')
+trig = 0
+my_et.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
+my_et.subscribe_to(tr.EYETRACKER_EXTERNAL_SIGNAL, external_signal_callback)
+
+# get input to save data
+while True:
+
+    # save data automatically at end of block
+    if trig == 254:
+        FILENAME = f'{SUBID}_task-{EXPERIMENT}_eye_block-{block}.csv'
+        FILEPATH = DATAPATH + SUBID + '/eye/' + FILENAME
+        time.sleep(1)
+        write_buffer_to_file(gaze_data_buffer, FILEPATH) # external signal buffer
+        print('Saving data')
+        block += 1 
+    # exit recording
+    if trig == 255:
         print('Exiting')
         break
 
@@ -250,4 +231,57 @@ while True:
 my_et.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
 my_et.unsubscribe_from(tr.EYETRACKER_EXTERNAL_SIGNAL, external_signal_callback)
 print('ENDING RECORDING')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -197,6 +197,7 @@ CALIB_POINT_3 = [0, 0]
 CALIB_POINT_4 = [-(win.size[0]/10)*2.5, -(win.size[1]/10)*2.5]
 CALIB_POINT_5 = [(win.size[0]/10)*2.5, -(win.size[1]/10)*2.5]
 
+
 # create new positions for PROPIXX
 LEFT_QUAD = reformat_for_propixx(win, LEFT)
 RIGHT_QUAD = reformat_for_propixx(win, RIGHT)
@@ -464,36 +465,7 @@ notchList = [
                 size=(scale_length/20, scale_length/10),
                 **stim_params)
     for notch in range(N_NOTCHES)]
-# fifty_txt_stim = visual.TextStim(
-#                             text = '50%', 
-#                             color = WHITE,
-#                             height = txt_stim_height, 
-#                             **stim_params)
-# sixty_txt_stim = visual.TextStim(
-#                             text = '60%', 
-#                             color = WHITE,
-#                             height = txt_stim_height, 
-#                             **stim_params)
-# seventy_txt_stim = visual.TextStim(
-#                             text = '70%', 
-#                             color = WHITE,
-#                             height = txt_stim_height, 
-#                             **stim_params)
-# eighty_txt_stim = visual.TextStim(
-#                             text = '80%', 
-#                             color = WHITE,
-#                             height = txt_stim_height, 
-#                             **stim_params)
-# ninety_txt_stim = visual.TextStim(
-#                             text = '90%', 
-#                             color = WHITE,
-#                             height = txt_stim_height, 
-#                             **stim_params)
-# hundred_txt_stim = visual.TextStim(
-#                             text = '100%', 
-#                             color = WHITE,
-#                             height = txt_stim_height, 
-#                             **stim_params)
+
 always_txt_stim = visual.TextStim(
                             text = 'Always', 
                             color = WHITE,
@@ -777,6 +749,8 @@ choice: 251
 confidence: 252
 probability: 253
 
+Redo calibration/validation:
+253
 Save eyetracking data:
 254
 Exit eyetracker:
@@ -1385,15 +1359,14 @@ if DEMO:
                 quitPressed = event.getKeys(keyList = QUITKEYS)
                 pressed = event.getKeys(keyList = RESPKEYS, timeStamped = clock)
                 if quitPressed: # exit task 
-                    dp.DPxSetPPxDlpSeqPgrm('RGB')
-                    dp.DPxDisableDoutPixelMode()
-                    dp.DPxWriteRegCache()
-                    dp.DPxClose() 
-                    core.quit()
+                    break
                 elif pressed:
                     response = pressed[0][0]
                     rt = pressed[0][1]
                     break
+            
+            if quitPressed:
+                break
 
             # calculate correct response
             tar_idx = np.isin(stim_options[stim_idx], [45, -45])
@@ -1678,6 +1651,105 @@ logging.warning('START_EXP')
 logging.flush()
 for block in range(1, N_BLOCKS + 1): 
 
+    # redo calibration/validation after 8 blocks
+    if (EYETRACKING) and (block == 9):
+
+        # send trigger 
+        trg_rgb = dp.DPxTriggerToRGB(255)
+        trg_array.colors = trg_rgb
+        logging.warning('CALIB_EYE_TRG')
+        for frame in range(0, 1): 
+
+            # draw stims 
+            trg_array.draw()
+
+            # flip window
+            win.flip()
+
+        event.clearEvents()
+        txt_stim.text = 'Redo calibration and validation'
+        instr_idx = 0
+        while True:
+
+            # keep track of quadrants
+            quad_idx = (instr_idx % 4)
+
+            # draw
+            txt_stim.pos = CENTRE_QUAD[quad_idx]
+            txt_stim.draw()
+
+            # flip window once fourth quadrant is drawn
+            if quad_idx == 3: 
+                win.flip()
+
+            # collect user input to exit 
+            begin_calibration = event.getKeys(keyList = CONKEYS)
+            if begin_calibration:
+                break
+
+            # udpate frame
+            instr_idx += 1
+        
+        # enter calibration
+        while True:
+
+            logging.warning('START_CALIBRATION')
+            logging.flush()
+
+            # Cycle through calibration points 
+            for point, _ in enumerate(CALIB_POINTS):
+
+                # set positions for current point
+                calib_array.xys = CALIB_POINTS[point]
+
+                # present on screen
+                event.clearEvents()
+                calib_idx = 0 
+                while True:
+
+                    # draw stims 
+                    calib_array.sizes = (crc_stim_rad/6)*calib_size[calib_idx:calib_idx+4]
+                    calib_array.draw()
+
+                    # flip window
+                    win.flip()
+
+                    #collect user input to exit 
+                    pressed = event.getKeys(keyList = CONKEYS)
+                    if pressed:
+                        break
+
+                    # update idx
+                    calib_idx += 4
+            
+            event.clearEvents()
+            txt_stim.text = 'Repeat points?'
+            instr_idx = 0
+            while True:
+
+                # keep track of quadrants
+                quad_idx = (instr_idx % 4)
+
+                # draw
+                txt_stim.pos = CENTRE_QUAD[quad_idx]
+                txt_stim.draw()
+
+                # flip window once fourth quadrant is drawn
+                if quad_idx == 3: 
+                    win.flip()
+
+                # collect user input to exit 
+                continue_calibration = event.getKeys(keyList = CONKEYS)
+                end_calibration = event.getKeys(keyList = EXITKEYS)
+                if (continue_calibration) or (end_calibration):
+                    break
+
+                # udpate frame
+                instr_idx += 1 
+
+            if end_calibration:
+                break
+
     # present instructions 
     txt_idx = 0
     txt_stim.text = f'This is Block {block}. \n\n Please keep your eyes on the fixation cross throughout each trial. \n\n Press space to begin.' 
@@ -1718,7 +1790,7 @@ for block in range(1, N_BLOCKS + 1):
     points_this_block = 0
     cents_this_block = 0
     # start presenting trials ---------------------------------------------------------- TRIAL ONSET
-    for trial in range(0, N_TRIALS):
+    for trial in range(0, N_TRIALS): 
  
         # send trial number trigger ----------------------------------------------------TRG ONSET
         trg_rgb = dp.DPxTriggerToRGB(trial + 1)
@@ -2301,7 +2373,7 @@ for frame in range(0, 1):
 
     # flip window
     win.flip()
-
+core.wait(0.5)
 logging.warning('END_EXPERIMENT')
 logging.flush()
 event.clearEvents()
